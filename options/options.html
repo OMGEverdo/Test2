@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Activity Tracker - Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ Activity Tracker Settings</h1>
+    </header>
+
+    <div class="content">
+      <section class="section">
+        <h2>🤖 AI Analysis Configuration</h2>
+        <p class="description">Configure AI provider to get advanced insights and automation recommendations.</p>
+
+        <div class="form-group">
+          <label for="ai-provider">AI Provider:</label>
+          <select id="ai-provider">
+            <option value="none">None (Disable AI)</option>
+            <option value="openai">OpenAI (GPT-4)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="api-key-group" style="display: none;">
+          <label for="api-key">API Key:</label>
+          <input type="password" id="api-key" placeholder="Enter your API key">
+          <small>Your API key is stored locally and never shared.</small>
+        </div>
+
+        <div class="api-instructions" id="openai-instructions" style="display: none;">
+          <h3>Getting an OpenAI API Key:</h3>
+          <ol>
+            <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></li>
+            <li>Sign in or create an account</li>
+            <li>Click "Create new secret key"</li>
+            <li>Copy the key and paste it above</li>
+          </ol>
+        </div>
+
+        <div class="api-instructions" id="anthropic-instructions" style="display: none;">
+          <h3>Getting an Anthropic API Key:</h3>
+          <ol>
+            <li>Go to <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a></li>
+            <li>Sign in or create an account</li>
+            <li>Navigate to API Keys section</li>
+            <li>Create a new API key</li>
+            <li>Copy the key and paste it above</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>📊 Tracking Settings</h2>
+        <p class="description">Control what activities are tracked.</p>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="track-clicks" checked>
+            Track clicks
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="track-forms" checked>
+            Track form submissions
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="track-navigation" checked>
+            Track page navigation
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="track-time" checked>
+            Track time spent on pages
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="track-inputs" checked>
+            Track input field interactions
+          </label>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>⏰ Analysis Settings</h2>
+        <p class="description">Configure when pattern analysis runs.</p>
+
+        <div class="form-group">
+          <label for="analysis-interval">Auto-analysis interval:</label>
+          <select id="analysis-interval">
+            <option value="15">Every 15 minutes</option>
+            <option value="30" selected>Every 30 minutes</option>
+            <option value="60">Every hour</option>
+            <option value="120">Every 2 hours</option>
+            <option value="0">Disabled (Manual only)</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>🔒 Privacy & Data</h2>
+        <p class="description">Manage your tracking data and privacy settings.</p>
+
+        <div class="form-group">
+          <label for="data-retention">Data retention period:</label>
+          <select id="data-retention">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+            <option value="0">Keep all data</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="exclude-sensitive">
+            Exclude potentially sensitive sites (banking, healthcare, etc.)
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="exclude-domains">Exclude specific domains (one per line):</label>
+          <textarea id="exclude-domains" rows="4" placeholder="example.com&#10;mail.google.com"></textarea>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="save-btn" class="btn btn-primary">💾 Save Settings</button>
+        <button id="reset-btn" class="btn btn-secondary">🔄 Reset to Defaults</button>
+      </div>
+
+      <div id="save-message" class="save-message" style="display: none;">
+        ✅ Settings saved successfully!
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

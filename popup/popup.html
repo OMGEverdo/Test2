@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Activity Tracker Dashboard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔍 Activity Tracker</h1>
+      <p class="subtitle">Automation Opportunity Advisor</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="overview">Overview</button>
+      <button class="tab-button" data-tab="patterns">Patterns</button>
+      <button class="tab-button" data-tab="ai-insights">AI Insights</button>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-content active" id="overview">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="total-events">0</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="today-events">0</div>
+          <div class="stat-label">Today's Events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="click-count">0</div>
+          <div class="stat-label">Clicks Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="form-count">0</div>
+          <div class="stat-label">Forms Submitted</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>⏱️ Time by Domain (Top 10)</h3>
+        <div id="time-domains" class="domain-list">
+          <p class="placeholder">Loading...</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>📊 Quick Stats</h3>
+        <div id="quick-stats">
+          <p class="placeholder">Loading...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patterns Tab -->
+    <div class="tab-content" id="patterns">
+      <div class="section">
+        <div class="section-header">
+          <h3>🔄 Detected Patterns</h3>
+          <button id="analyze-btn" class="btn btn-primary">Run Analysis</button>
+        </div>
+        <div id="patterns-list">
+          <p class="placeholder">Click "Run Analysis" to detect automation opportunities</p>
+        </div>
+        <div id="last-analysis" class="last-analysis"></div>
+      </div>
+    </div>
+
+    <!-- AI Insights Tab -->
+    <div class="tab-content" id="ai-insights">
+      <div class="section">
+        <h3>🤖 AI-Powered Analysis</h3>
+        <p class="info-text">Get advanced insights using AI to analyze activity patterns</p>
+
+        <div class="ai-config">
+          <label for="ai-provider">AI Provider:</label>
+          <select id="ai-provider">
+            <option value="openai">OpenAI (GPT-4)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="none">Not Configured</option>
+          </select>
+
+          <button id="ai-analyze-btn" class="btn btn-primary">Analyze with AI</button>
+        </div>
+
+        <div id="ai-results" class="ai-results">
+          <p class="placeholder">Configure AI provider in Options to enable AI analysis</p>
+        </div>
+
+        <div id="ai-loading" class="loading" style="display: none;">
+          <div class="spinner"></div>
+          <p>Analyzing patterns with AI...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button id="export-btn" class="btn btn-secondary">📤 Export Data</button>
+      <button id="clear-btn" class="btn btn-danger">🗑️ Clear Data</button>
+      <button id="options-btn" class="btn btn-secondary">⚙️ Options</button>
+    </div>
+
+    <footer>
+      <p class="footer-text">Tracking active • Last updated: <span id="last-update">Never</span></p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
