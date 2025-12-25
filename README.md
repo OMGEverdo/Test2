@@ -38,10 +38,19 @@ Perfect for automation agencies working with businesses that have 5+ employees w
 - 📊 **Impact prioritization** - Ranked by time saved × frequency
 - 📈 **ROI estimation** - Estimated time savings for each opportunity
 
+### Visual Workflow Capture
+- 📸 **Automatic screenshots** - Captures screens when triggers are detected
+- 🎯 **Smart triggers** - Screenshots on form submissions, repetitive clicks, high input activity
+- ⏰ **Periodic snapshots** - Optional scheduled screenshots every 5 minutes
+- 🖼️ **Screenshot gallery** - Browse captured screens with metadata
+- 💾 **Storage management** - Automatic compression and cleanup to prevent storage issues
+- 🔍 **Visual workflow documentation** - See exactly what users are doing
+
 ### Dashboard & Reporting
 - 📊 **Real-time statistics** - Live activity metrics
 - 📈 **Visual insights** - Time by domain, event counts, pattern severity
-- 📤 **Data export** - Export full activity data as JSON
+- 📸 **Screenshot gallery** - Visual record of workflows with filtering
+- 📤 **Data export** - Export full activity data as JSON (including screenshots)
 - 🎨 **Beautiful UI** - Gradient design with intuitive tabs
 
 ## 🚀 Installation
@@ -99,10 +108,36 @@ Once installed, the extension automatically tracks:
 ### Viewing Statistics
 
 1. Click the extension icon to open the dashboard
-2. Navigate through three tabs:
+2. Navigate through four tabs:
    - **Overview**: See total events, clicks, forms, and time by domain
    - **Patterns**: View detected automation opportunities
+   - **Screenshots**: Browse visual records of workflows
    - **AI Insights**: Get AI-powered recommendations
+
+### Using Screenshots
+
+**Automatic Capture:**
+Screenshots are automatically captured when:
+- Forms are submitted (see what data is being entered)
+- Repetitive click patterns detected (catch manual workflows)
+- High input activity occurs (identify data entry tasks)
+- Optionally: Every 5 minutes (enable in Options)
+
+**Viewing Screenshots:**
+1. Open dashboard → "Screenshots" tab
+2. Browse captured screenshots as thumbnails
+3. Click any screenshot to view full size
+4. Filter by trigger type (forms, repetitive clicks, etc.)
+5. Delete unwanted screenshots
+
+**Manual Capture:**
+- Click "Capture Now" button in Screenshots tab for instant capture
+
+**Settings:**
+- Configure triggers in Options → Screenshot Settings
+- Adjust throttle time to prevent spam
+- Set maximum screenshots to keep
+- Enable/disable specific triggers
 
 ### Running Pattern Analysis
 
@@ -140,6 +175,7 @@ Export all tracking data for external analysis:
 **Export includes:**
 - All tracked activities
 - Detected patterns
+- **Captured screenshots** (with metadata)
 - Timestamps and metadata
 
 ## 🛠️ Configuration Options
@@ -156,6 +192,13 @@ Access via: Extension icon → Options button
 
 ### Analysis Settings
 - **Auto-analysis interval**: 15min, 30min, 1hr, 2hr, or manual only
+
+### Screenshot Settings
+- **Enable/disable** screenshot capture globally
+- **Trigger toggles**: Form submissions, repetitive clicks, high input activity
+- **Periodic screenshots**: Optional 5-minute interval captures
+- **Throttle time**: Minimum seconds between screenshots (10s - 5min)
+- **Storage limit**: Max screenshots to keep (20, 50, 100, or 200)
 
 ### Privacy Settings
 - **Data retention**: 7, 30, 90 days, or keep all
@@ -176,6 +219,7 @@ Access via: Extension icon → Options button
 - Form submissions (without form data)
 - Time spent per domain
 - Navigation patterns
+- **Screenshots** (with triggers and metadata, stored as compressed JPEG)
 
 ### What's NOT Tracked
 - ❌ Passwords or credentials

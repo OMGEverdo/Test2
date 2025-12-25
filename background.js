@@ -5,6 +5,10 @@ let activeTabId = null;
 let activeStartTime = null;
 let dailyStats = {};
 
+// Screenshot tracking
+let screenshotCounts = {}; // Track screenshots per domain to avoid spam
+let lastScreenshotTime = {}; // Throttle screenshots
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Activity Tracker installed');
@@ -17,8 +21,12 @@ chrome.runtime.onInstalled.addListener(() => {
     activities: [],
     sessions: [],
     patterns: [],
+    screenshots: [],
     lastAnalysis: null
   });
+
+  // Set up periodic screenshot alarm (every 5 minutes by default)
+  chrome.alarms.create('periodicScreenshot', { periodInMinutes: 5 });
 });
 
 // Track tab activation
@@ -58,13 +66,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'EXPORT_DATA') {
     exportData().then(sendResponse);
     return true;
+  } else if (request.type === 'GET_SCREENSHOTS') {
+    getScreenshots().then(sendResponse);
+    return true;
+  } else if (request.type === 'DELETE_SCREENSHOT') {
+    deleteScreenshot(request.screenshotId).then(sendResponse);
+    return true;
+  } else if (request.type === 'CAPTURE_SCREENSHOT') {
+    captureScreenshot(request.trigger, request.metadata).then(sendResponse);
+    return true;
   }
 });
 
 // Periodic analysis alarm
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'periodicAnalysis') {
     analyzePatterns();
+  } else if (alarm.name === 'periodicScreenshot') {
+    // Capture periodic screenshot of active tab
+    const settings = await chrome.storage.sync.get(['screenshotEnabled', 'screenshotPeriodic']);
+    if (settings.screenshotEnabled && settings.screenshotPeriodic) {
+      captureScreenshot('periodic');
+    }
   }
 });
 
@@ -107,6 +130,9 @@ async function recordEvent(tab, eventData) {
   };
 
   await saveEvent(event);
+
+  // Check if screenshot should be triggered
+  await checkScreenshotTriggers(tab, eventData);
 }
 
 // Save time spent on a URL
@@ -298,11 +324,217 @@ async function analyzePatterns() {
 
 // Export data for external analysis
 async function exportData() {
-  const result = await chrome.storage.local.get(['activities', 'patterns']);
+  const result = await chrome.storage.local.get(['activities', 'patterns', 'screenshots']);
 
   return {
     activities: result.activities || [],
     patterns: result.patterns || [],
+    screenshots: result.screenshots || [],
     exportDate: new Date().toISOString()
   };
+}
+
+// ============================================================================
+// SCREENSHOT FUNCTIONALITY
+// ============================================================================
+
+// Check if screenshot should be triggered based on event
+async function checkScreenshotTriggers(tab, eventData) {
+  const settings = await chrome.storage.sync.get({
+    screenshotEnabled: true,
+    screenshotOnForm: true,
+    screenshotOnRepetitive: true,
+    screenshotOnHighActivity: true,
+    screenshotThrottleSeconds: 30
+  });
+
+  if (!settings.screenshotEnabled) {
+    return;
+  }
+
+  // Throttle screenshots to avoid spam
+  const domain = new URL(tab.url).hostname;
+  const now = Date.now();
+  const lastTime = lastScreenshotTime[domain] || 0;
+  const throttleMs = settings.screenshotThrottleSeconds * 1000;
+
+  if (now - lastTime < throttleMs) {
+    return; // Too soon since last screenshot
+  }
+
+  let shouldCapture = false;
+  let trigger = '';
+  let metadata = {};
+
+  // Trigger 1: Form submissions
+  if (settings.screenshotOnForm && eventData.type === 'form_submit') {
+    shouldCapture = true;
+    trigger = 'form_submission';
+    metadata = {
+      formAction: eventData.action,
+      fieldCount: eventData.fieldCount
+    };
+  }
+
+  // Trigger 2: Repetitive click patterns
+  if (settings.screenshotOnRepetitive && eventData.type === 'repetitive_click_pattern') {
+    shouldCapture = true;
+    trigger = 'repetitive_clicks';
+    metadata = {
+      clickCount: eventData.count,
+      element: eventData.element
+    };
+  }
+
+  // Trigger 3: Input batch (potential data entry)
+  if (settings.screenshotOnHighActivity && eventData.type === 'input_batch' && eventData.count >= 10) {
+    shouldCapture = true;
+    trigger = 'high_input_activity';
+    metadata = {
+      inputCount: eventData.count
+    };
+  }
+
+  if (shouldCapture) {
+    lastScreenshotTime[domain] = now;
+    await captureScreenshot(trigger, metadata);
+  }
+}
+
+// Capture screenshot of active tab
+async function captureScreenshot(trigger = 'manual', metadata = {}) {
+  try {
+    // Get active tab
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!activeTab) {
+      console.log('No active tab for screenshot');
+      return null;
+    }
+
+    // Skip certain URLs
+    if (activeTab.url.startsWith('chrome://') ||
+        activeTab.url.startsWith('chrome-extension://') ||
+        activeTab.url.startsWith('about:')) {
+      return null;
+    }
+
+    // Capture the screenshot
+    const dataUrl = await chrome.tabs.captureVisibleTab(activeTab.windowId, {
+      format: 'jpeg',
+      quality: 70 // Compress to save storage
+    });
+
+    // Create screenshot object
+    const screenshot = {
+      id: generateId(),
+      url: activeTab.url,
+      title: activeTab.title,
+      domain: new URL(activeTab.url).hostname,
+      trigger: trigger,
+      metadata: metadata,
+      timestamp: Date.now(),
+      dataUrl: dataUrl,
+      thumbnailUrl: await createThumbnail(dataUrl)
+    };
+
+    // Save screenshot
+    await saveScreenshot(screenshot);
+
+    console.log(`Screenshot captured: ${trigger} on ${screenshot.domain}`);
+    return screenshot;
+
+  } catch (error) {
+    console.error('Error capturing screenshot:', error);
+    return null;
+  }
+}
+
+// Create thumbnail from screenshot
+async function createThumbnail(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = new OffscreenCanvas(200, 150);
+      const ctx = canvas.getContext('2d');
+
+      const scale = Math.min(200 / img.width, 150 / img.height);
+      const width = img.width * scale;
+      const height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.convertToBlob({ type: 'image/jpeg', quality: 0.5 }).then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    };
+    img.src = dataUrl;
+  });
+}
+
+// Save screenshot to storage
+async function saveScreenshot(screenshot) {
+  const result = await chrome.storage.local.get(['screenshots']);
+  const screenshots = result.screenshots || [];
+
+  screenshots.push(screenshot);
+
+  // Keep only last 50 screenshots to prevent storage bloat
+  // Screenshots are large, so we limit them more aggressively
+  if (screenshots.length > 50) {
+    screenshots.shift();
+  }
+
+  await chrome.storage.local.set({ screenshots });
+
+  // Check storage usage
+  const bytesInUse = await chrome.storage.local.getBytesInUse();
+  const maxBytes = chrome.storage.local.QUOTA_BYTES || 10485760; // 10MB default
+
+  if (bytesInUse > maxBytes * 0.9) {
+    console.warn('Storage almost full, removing old screenshots');
+    // Remove oldest screenshots if storage is > 90% full
+    screenshots.splice(0, 10);
+    await chrome.storage.local.set({ screenshots });
+  }
+}
+
+// Get all screenshots
+async function getScreenshots(filter = {}) {
+  const result = await chrome.storage.local.get(['screenshots']);
+  let screenshots = result.screenshots || [];
+
+  // Apply filters
+  if (filter.trigger) {
+    screenshots = screenshots.filter(s => s.trigger === filter.trigger);
+  }
+  if (filter.domain) {
+    screenshots = screenshots.filter(s => s.domain === filter.domain);
+  }
+  if (filter.since) {
+    screenshots = screenshots.filter(s => s.timestamp >= filter.since);
+  }
+
+  // Sort by timestamp (newest first)
+  screenshots.sort((a, b) => b.timestamp - a.timestamp);
+
+  return screenshots;
+}
+
+// Delete a screenshot
+async function deleteScreenshot(screenshotId) {
+  const result = await chrome.storage.local.get(['screenshots']);
+  let screenshots = result.screenshots || [];
+
+  screenshots = screenshots.filter(s => s.id !== screenshotId);
+  await chrome.storage.local.set({ screenshots });
+
+  return { success: true };
+}
+
+// Generate unique ID
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }

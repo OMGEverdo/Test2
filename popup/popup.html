@@ -15,6 +15,7 @@
     <div class="tabs">
       <button class="tab-button active" data-tab="overview">Overview</button>
       <button class="tab-button" data-tab="patterns">Patterns</button>
+      <button class="tab-button" data-tab="screenshots">Screenshots</button>
       <button class="tab-button" data-tab="ai-insights">AI Insights</button>
     </div>
 
@@ -68,6 +69,35 @@
       </div>
     </div>
 
+    <!-- Screenshots Tab -->
+    <div class="tab-content" id="screenshots">
+      <div class="section">
+        <div class="section-header">
+          <h3>📸 Activity Screenshots</h3>
+          <button id="capture-screenshot-btn" class="btn btn-primary">Capture Now</button>
+        </div>
+        <p class="info-text">Visual records captured when triggers are detected (forms, repetitive actions, etc.)</p>
+
+        <div class="screenshot-filters">
+          <label for="screenshot-filter">Filter by trigger:</label>
+          <select id="screenshot-filter">
+            <option value="all">All Screenshots</option>
+            <option value="form_submission">Form Submissions</option>
+            <option value="repetitive_clicks">Repetitive Clicks</option>
+            <option value="high_input_activity">High Input Activity</option>
+            <option value="periodic">Periodic Snapshots</option>
+            <option value="manual">Manual Captures</option>
+          </select>
+        </div>
+
+        <div id="screenshot-gallery" class="screenshot-gallery">
+          <p class="placeholder">No screenshots captured yet. Screenshots will be automatically captured based on your trigger settings.</p>
+        </div>
+
+        <div id="screenshot-count" class="screenshot-count"></div>
+      </div>
+    </div>
+
     <!-- AI Insights Tab -->
     <div class="tab-content" id="ai-insights">
       <div class="section">
@@ -106,6 +136,18 @@
     <footer>
       <p class="footer-text">Tracking active • Last updated: <span id="last-update">Never</span></p>
     </footer>
+  </div>
+
+  <!-- Screenshot Modal -->
+  <div id="screenshot-modal" class="screenshot-modal">
+    <div class="screenshot-modal-content">
+      <button class="screenshot-modal-close" id="modal-close">×</button>
+      <img id="modal-image" class="screenshot-modal-image" src="" alt="Screenshot">
+      <div class="screenshot-modal-info">
+        <p id="modal-info"></p>
+        <button id="modal-delete" class="screenshot-modal-delete">Delete Screenshot</button>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

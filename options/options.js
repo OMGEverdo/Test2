@@ -21,6 +21,13 @@ async function loadSettings() {
     trackTime: true,
     trackInputs: true,
     analysisInterval: 30,
+    screenshotEnabled: true,
+    screenshotOnForm: true,
+    screenshotOnRepetitive: true,
+    screenshotOnHighActivity: true,
+    screenshotPeriodic: false,
+    screenshotThrottleSeconds: 30,
+    screenshotMax: 50,
     dataRetention: 30,
     excludeSensitive: false,
     excludeDomains: ''
@@ -40,6 +47,15 @@ async function loadSettings() {
 
   // Analysis settings
   document.getElementById('analysis-interval').value = settings.analysisInterval;
+
+  // Screenshot settings
+  document.getElementById('screenshot-enabled').checked = settings.screenshotEnabled;
+  document.getElementById('screenshot-on-form').checked = settings.screenshotOnForm;
+  document.getElementById('screenshot-on-repetitive').checked = settings.screenshotOnRepetitive;
+  document.getElementById('screenshot-on-high-activity').checked = settings.screenshotOnHighActivity;
+  document.getElementById('screenshot-periodic').checked = settings.screenshotPeriodic;
+  document.getElementById('screenshot-throttle').value = settings.screenshotThrottleSeconds;
+  document.getElementById('screenshot-max').value = settings.screenshotMax;
 
   // Privacy settings
   document.getElementById('data-retention').value = settings.dataRetention;
@@ -80,6 +96,13 @@ async function saveSettings() {
     trackTime: document.getElementById('track-time').checked,
     trackInputs: document.getElementById('track-inputs').checked,
     analysisInterval: parseInt(document.getElementById('analysis-interval').value),
+    screenshotEnabled: document.getElementById('screenshot-enabled').checked,
+    screenshotOnForm: document.getElementById('screenshot-on-form').checked,
+    screenshotOnRepetitive: document.getElementById('screenshot-on-repetitive').checked,
+    screenshotOnHighActivity: document.getElementById('screenshot-on-high-activity').checked,
+    screenshotPeriodic: document.getElementById('screenshot-periodic').checked,
+    screenshotThrottleSeconds: parseInt(document.getElementById('screenshot-throttle').value),
+    screenshotMax: parseInt(document.getElementById('screenshot-max').value),
     dataRetention: parseInt(document.getElementById('data-retention').value),
     excludeSensitive: document.getElementById('exclude-sensitive').checked,
     excludeDomains: document.getElementById('exclude-domains').value
@@ -94,6 +117,15 @@ async function saveSettings() {
     });
   } else {
     chrome.alarms.clear('periodicAnalysis');
+  }
+
+  // Update alarm for periodic screenshots
+  if (settings.screenshotEnabled && settings.screenshotPeriodic) {
+    chrome.alarms.create('periodicScreenshot', {
+      periodInMinutes: 5
+    });
+  } else {
+    chrome.alarms.clear('periodicScreenshot');
   }
 
   // Show success message

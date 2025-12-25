@@ -14,11 +14,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('clear-btn').addEventListener('click', clearData);
   document.getElementById('options-btn').addEventListener('click', openOptions);
 
+  // Screenshot event listeners
+  document.getElementById('capture-screenshot-btn').addEventListener('click', captureScreenshotNow);
+  document.getElementById('screenshot-filter').addEventListener('change', loadScreenshots);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+
   // Load AI provider setting
   loadAIProvider();
 
+  // Load screenshots
+  await loadScreenshots();
+
   // Auto-refresh every 30 seconds
-  setInterval(loadStats, 30000);
+  setInterval(() => {
+    loadStats();
+    loadScreenshots();
+  }, 30000);
 });
 
 // Tab management
@@ -395,3 +406,167 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// ============================================================================
+// SCREENSHOT FUNCTIONALITY
+// ============================================================================
+
+// Load and display screenshots
+async function loadScreenshots() {
+  try {
+    const filter = document.getElementById('screenshot-filter').value;
+    const filterParam = filter === 'all' ? {} : { trigger: filter };
+
+    const screenshots = await chrome.runtime.sendMessage({
+      type: 'GET_SCREENSHOTS',
+      filter: filterParam
+    });
+
+    displayScreenshots(screenshots);
+  } catch (error) {
+    console.error('Error loading screenshots:', error);
+  }
+}
+
+// Display screenshots in gallery
+function displayScreenshots(screenshots) {
+  const gallery = document.getElementById('screenshot-gallery');
+  const countDiv = document.getElementById('screenshot-count');
+
+  if (!screenshots || screenshots.length === 0) {
+    gallery.innerHTML = '<p class="placeholder">No screenshots captured yet. Screenshots will be automatically captured based on your trigger settings.</p>';
+    countDiv.textContent = '';
+    return;
+  }
+
+  gallery.innerHTML = screenshots.map(screenshot => `
+    <div class="screenshot-item" data-screenshot-id="${screenshot.id}">
+      <img class="screenshot-thumbnail"
+           src="${screenshot.thumbnailUrl || screenshot.dataUrl}"
+           alt="${escapeHtml(screenshot.title)}"
+           loading="lazy">
+      <div class="screenshot-info">
+        <div class="screenshot-trigger ${screenshot.trigger}">
+          ${formatTriggerType(screenshot.trigger)}
+        </div>
+        <div class="screenshot-domain">${escapeHtml(screenshot.domain)}</div>
+        <div class="screenshot-time">${formatTimeAgo(screenshot.timestamp)}</div>
+        ${screenshot.metadata ? `<div class="screenshot-metadata">${formatScreenshotMetadata(screenshot.metadata)}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  countDiv.textContent = `${screenshots.length} screenshot${screenshots.length !== 1 ? 's' : ''} captured`;
+
+  // Add click listeners to screenshots
+  gallery.querySelectorAll('.screenshot-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const screenshotId = item.getAttribute('data-screenshot-id');
+      const screenshot = screenshots.find(s => s.id === screenshotId);
+      if (screenshot) {
+        showScreenshotModal(screenshot);
+      }
+    });
+  });
+}
+
+// Format trigger type for display
+function formatTriggerType(trigger) {
+  const types = {
+    'form_submission': '📝 Form Submission',
+    'repetitive_clicks': '🔄 Repetitive Clicks',
+    'high_input_activity': '⌨️ High Input Activity',
+    'periodic': '⏰ Periodic Snapshot',
+    'manual': '📸 Manual Capture'
+  };
+  return types[trigger] || trigger;
+}
+
+// Format screenshot metadata
+function formatScreenshotMetadata(metadata) {
+  if (!metadata) return '';
+
+  const parts = [];
+  if (metadata.clickCount) parts.push(`${metadata.clickCount} clicks`);
+  if (metadata.fieldCount) parts.push(`${metadata.fieldCount} fields`);
+  if (metadata.inputCount) parts.push(`${metadata.inputCount} inputs`);
+
+  return parts.join(' • ');
+}
+
+// Capture screenshot now (manual)
+async function captureScreenshotNow() {
+  const button = document.getElementById('capture-screenshot-btn');
+  button.disabled = true;
+  button.textContent = 'Capturing...';
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'CAPTURE_SCREENSHOT',
+      trigger: 'manual',
+      metadata: {}
+    });
+
+    setTimeout(async () => {
+      button.textContent = 'Capture Now';
+      button.disabled = false;
+      await loadScreenshots();
+    }, 1000);
+
+  } catch (error) {
+    console.error('Error capturing screenshot:', error);
+    button.textContent = 'Error - Try Again';
+    button.disabled = false;
+  }
+}
+
+// Show screenshot modal
+let currentScreenshot = null;
+
+function showScreenshotModal(screenshot) {
+  currentScreenshot = screenshot;
+
+  const modal = document.getElementById('screenshot-modal');
+  const image = document.getElementById('modal-image');
+  const info = document.getElementById('modal-info');
+
+  image.src = screenshot.dataUrl;
+  info.innerHTML = `
+    <strong>${formatTriggerType(screenshot.trigger)}</strong><br>
+    <strong>Domain:</strong> ${escapeHtml(screenshot.domain)}<br>
+    <strong>URL:</strong> ${escapeHtml(screenshot.url)}<br>
+    <strong>Title:</strong> ${escapeHtml(screenshot.title)}<br>
+    <strong>Captured:</strong> ${new Date(screenshot.timestamp).toLocaleString()}<br>
+    ${screenshot.metadata ? `<strong>Details:</strong> ${formatScreenshotMetadata(screenshot.metadata)}` : ''}
+  `;
+
+  modal.classList.add('active');
+
+  // Set up delete button
+  const deleteBtn = document.getElementById('modal-delete');
+  deleteBtn.onclick = async () => {
+    if (confirm('Delete this screenshot?')) {
+      await chrome.runtime.sendMessage({
+        type: 'DELETE_SCREENSHOT',
+        screenshotId: screenshot.id
+      });
+      closeModal();
+      await loadScreenshots();
+    }
+  };
+}
+
+// Close screenshot modal
+function closeModal() {
+  const modal = document.getElementById('screenshot-modal');
+  modal.classList.remove('active');
+  currentScreenshot = null;
+}
+
+// Close modal on background click
+document.addEventListener('click', (event) => {
+  const modal = document.getElementById('screenshot-modal');
+  if (event.target === modal) {
+    closeModal();
+  }
+});

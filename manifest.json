@@ -9,7 +9,8 @@
     "activeTab",
     "alarms",
     "scripting",
-    "webNavigation"
+    "webNavigation",
+    "tabCapture"
   ],
   "host_permissions": [
     "<all_urls>"
