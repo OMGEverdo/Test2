@@ -452,26 +452,46 @@ async function captureScreenshot(trigger = 'manual', metadata = {}) {
 
 // Create thumbnail from screenshot
 async function createThumbnail(dataUrl) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = new OffscreenCanvas(200, 150);
-      const ctx = canvas.getContext('2d');
+  try {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
 
-      const scale = Math.min(200 / img.width, 150 / img.height);
-      const width = img.width * scale;
-      const height = img.height * scale;
+      img.onerror = () => {
+        console.log('Image load error, using original dataUrl');
+        resolve(dataUrl); // Fallback to original
+      };
 
-      ctx.drawImage(img, 0, 0, width, height);
+      img.onload = () => {
+        try {
+          const canvas = new OffscreenCanvas(200, 150);
+          const ctx = canvas.getContext('2d');
 
-      canvas.convertToBlob({ type: 'image/jpeg', quality: 0.5 }).then(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-    };
-    img.src = dataUrl;
-  });
+          const scale = Math.min(200 / img.width, 150 / img.height);
+          const width = img.width * scale;
+          const height = img.height * scale;
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.convertToBlob({ type: 'image/jpeg', quality: 0.5 })
+            .then(blob => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = () => resolve(dataUrl); // Fallback
+              reader.readAsDataURL(blob);
+            })
+            .catch(() => resolve(dataUrl)); // Fallback
+        } catch (error) {
+          console.log('Thumbnail creation error:', error);
+          resolve(dataUrl); // Fallback to original
+        }
+      };
+
+      img.src = dataUrl;
+    });
+  } catch (error) {
+    console.log('createThumbnail error:', error);
+    return dataUrl; // Fallback to original
+  }
 }
 
 // Save screenshot to storage
